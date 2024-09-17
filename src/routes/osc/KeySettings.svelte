@@ -3,34 +3,114 @@
     import chevDown from '$lib/images/chevdown.svg'
     import { ripple } from 'svelte-ripple-action'
     import {
-        homeOctave,
-        octaves,
+        baseOctave,
         voices,
+        synthType,
+        attack,
+        decay,
+        sustain,
+        release,
     } from '../../oscStore.js'
     import { defaultRipple } from '../../defaultsStore.js'
-
     
     export let osc
+    $: settings = [
+        { name: 'voices', val: $voices, ref: voices },
+        { name: 'octave', val: $baseOctave, ref: baseOctave },
+    ]
 
-    function incVoices() {
-        if ($voices < 8) { voices.set($voices + 1) }
+    function changeSynth() {
+        osc.changeSynth($synthType)
+        if ($synthType === 'pluck') { voices.mono() }
     }
-    function decVoices() {
-        if ($voices > 1) { voices.set($voices - 1) }
+    function incHandler(ref, name) {
+        if (name === 'voices' && $synthType === 'pluck') return
+        ref.inc()
+    }
+    function decHandler(ref, name) {
+        if (name === 'voices' && $synthType === 'pluck') return
+        ref.dec()
+    }
+
+    function handleEnvelopeChange() {
+        osc.synth.set({
+            envelope: {
+                attack: $attack,
+                decay: $decay,
+                sustain: $sustain,
+                release: $release
+            }
+        })
     }
 
 </script>
 
 <div class="key-settings-wrapper">
+    {#each settings as { name, val, ref } (`key-setting-${name}`)}
     <div class="key-setting">
         <div class="setting-name">
-            <span>voices</span></div>
+            <span>{ name }</span></div>
         <div class="setting-val">
-            <span class="val-text">{ $voices }</span>
+            <div class="val-text">{ val }</div>
             <div class="val-buttons">
-                <button use:ripple={ defaultRipple } class="inc" on:click={ incVoices }><img src={ chevUp } alt="up"/></button>
-                <button use:ripple={ defaultRipple } class="dec" on:click={ decVoices }><img src={ chevDown } alt="up"/></button>
+                <div class="button"
+                    use:ripple={ defaultRipple } on:click={ () => incHandler(ref, name) }>
+                    <img src={ chevUp } alt="up"/>
+                </div>
+                <div class="button"
+                    use:ripple={ defaultRipple } on:click={ () => decHandler(ref, name) }>
+                    <img src={ chevDown } alt="down"/>
+                </div>
             </div>
+        </div>
+    </div>
+    {/each}
+    <div class="key-setting">
+        <div class="setting-name">
+            <span>synth</span>
+        </div>
+        {#if osc?.SYNTHS}
+            <div class="setting-val select">
+                <select bind:value={ $synthType } on:change={ changeSynth }>
+                    {#each Object.keys(osc.SYNTHS) as synth}
+                        <option value={synth}>
+                            { synth }
+                        </option>
+                    {/each}
+                </select>
+            </div>
+        {:else}
+            <div class="setting-val select">
+                <select value={ '...' }>
+                    <option>...</option>
+                </select>
+            </div>
+        {/if}
+    </div>
+    <div class="envelope-wrapper">
+        <div class="envelope">
+            attack
+            <input type="range" min="0.005" max="2" step=".001" bind:value={$attack} 
+                on:input={ handleEnvelopeChange }/>
+            {$attack}s
+        </div>
+        <div class="envelope">
+            decay
+            <input type="range" min="0.1" max="2" step=".01" bind:value={$decay} 
+                on:input={ handleEnvelopeChange }/>
+            {$decay}s
+        </div>
+        <div class="envelope">
+            sustain
+            <input type="range" min="0" max="1" step=".01" bind:value={$sustain} 
+                on:input={ handleEnvelopeChange }/>
+            {($sustain * 100).toFixed()}%
+        </div>
+        <div class="envelope">
+            release
+            <input type="range" min="0.1" max="5" step=".01" bind:value={$release} 
+                on:input={ handleEnvelopeChange }/>
+            {$release}s
         </div>
     </div>
 </div>
@@ -40,36 +120,61 @@
         display: flex;
         align-items: center;
         width: 100%;
-        height: 3em;
+        /* height: 4em; */
         margin: 10px auto;
         padding: 0 10px;
-        background-color: #222222;
-        /* border: 1px solid; */
+        /* background-color: #222222; */
         border-radius: 5px;
-        border-color: #4a4a4a;
+        /* border-color: #4a4a4a; */
+        /* border: 1px solid; */
     }
     .key-setting {
-        /* display: flex; */
+        height: 100%;
         text-align: center;
         position: relative;
+        margin-right: 15px;
+        /* min-width: 80px; */
     }
-    .key-setting button {
+    .key-setting .button {
         width: 30px;
         padding: 5px;
+        background-color: #222222;
+        border: 1px solid gray;
+        border-right: none;
+        border-top: none;
+        z-index: 1;
+    }
+    .key-setting .button:nth-of-type(2) {
+        border-bottom: none;
+    }
+    @media (hover:hover) {
+        .key-setting .button:hover {
+            filter: brightness(1.3);
+        }
+	}
+    .setting-name {
+        height: 30%;
     }
     .setting-val {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
         border: 1px solid gray;
+        width: 100%;
+        height: 70%;
     }
     .val-text {
-        min-width: 40px;
+        min-width: 30px;
+        padding: 5px;
     }
-    .inc {
-
+    .setting-val select {
+        height: 100%;
+        padding: 0 10px;
     }
-    .dec {
-
+    .envelope-wrapper {
+        display: flex;
+    }
+    .envelope {
+        /* display: flex; */
     }
 </style>

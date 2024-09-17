@@ -2,32 +2,52 @@
 	import { onMount } from 'svelte'
 	import Keybed from "./Keybed.svelte"
 	import { 
-		octaves,
-		homeOctave,
+		baseOctave,
+		synthType,
+		attack,
+		decay,
+		sustain,
+		release,
+		volume,
 	} from '../../oscStore.js'
+	import { KEYCODES } from '$lib/keycodes.js'
 
 	import Osc from './osc.js'
-	import KeySettings from './KeySettings.svelte';
+	// import KeySettings from './KeySettings.svelte'
 	
 	let osc
-	let keys = ['F', 'F#', 'G', 'G#','A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E']
-	$: keybed = getKeybed($octaves)
+	let notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#','A', 'A#', 'B']
+	let keycodes = Object.keys(KEYCODES)
+	let keyNum = 17  // sets max number of keys in keybed
+	$: keybed = getKeybed($baseOctave)
 	
-    function getKeybed(octaves) {  // keybed starts on F.
-		let octave = $homeOctave
-		let endOctave = octave + octaves
+    function getKeybed(base) {  // keybed starts on F.
+		let octave = base
 		let keybed = []
-        for (let i = 0; i < keys.length; i++) {
-			if (keys[i] === 'C') { octave ++ }
-            const keyObj = { note: keys[i], octave }
+        for (let i = 0, j = 0; i < notes.length; i++, j++) {
+            const keyObj = { note: notes[i], keycode: keycodes[j], octave }
 			keybed.push(keyObj)
-			if (i === keys.length - 1 && octave !== endOctave) { i = -1 }
+			if (i === notes.length - 1) { 
+				octave++
+				i = -1
+			}
+			if (keybed.length === keyNum) break
         }
 		return keybed
     }
-
+	
 	onMount(() => {
-		osc = new Osc()
+		osc = new Osc({
+			synth: $synthType,
+			envelope: {
+				attack: $attack,
+				decay: $decay,
+				sustain: $sustain,
+				release: $release,
+			},
+			volume: $volume,
+		})
+		osc.chainUp()
 	})
 	
 </script>
@@ -38,7 +58,7 @@
 </svelte:head>
 
 <Keybed keybed={ keybed } osc={ osc } />
-<KeySettings osc={ osc } />
+<!-- <KeySettings osc={ osc } /> -->
 
 <!-- 
 	visualizer canvas animation
