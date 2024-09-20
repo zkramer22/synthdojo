@@ -1,7 +1,6 @@
 <script>
 	import Header from './Header.svelte';
 	import "svelte-ripple-action/ripple.css"
-
 </script>
 
 <div id="app">

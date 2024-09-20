@@ -21,3 +21,8 @@ export const KEYCODES = {
     'KeyZ': ['octave', 'dec'],
     'KeyX': ['octave', 'inc'],
 }
+
+export const FORBIDDEN = {
+    'MetaRight': true,
+    'MetaLeft': true,
+}
