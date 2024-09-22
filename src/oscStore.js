@@ -2,6 +2,10 @@ import { writable, derived, get } from "svelte/store";
 // import { error } from "@sveltejs/kit";
 import * as Tone from 'tone'
 
+// ----------- test ------------- //
+export const testKnob = writable(.2)
+export const testReverb = writable(.01)
+
 // --------- note banks --------- //
 export const mouseDownNote = writable('')
 export const keyDownNotes = writable([])
@@ -61,16 +65,21 @@ export const effects = writable({
         oversample: 'none',  // 'none', '2x', '4x' 
     }),
     reverb: new Tone.Reverb({
+        wet: .2,
+        decay: 3,  // time (milliseconds, seconds)
+        preDelay: .01,  // time (milliseconds, seconds)
+    }),
+    delay: new Tone.PingPongDelay({
         wet: 0,
-        decay: 3,  // seconds
-        preDelay: .01,  // seconds
+        delayTime: .2,  // time
+        feedback: .3,
     }),
     compressor: new Tone.Compressor({
         wet: 1,
         threshold: -6,  // decibels [-Infinity, 0]
-        attack: .02,  // seconds
+        attack: .02,  // time (milliseconds, seconds)
         knee: 12,  // decibels [0, max 20?]
-        release: .3,  // seconds
+        release: .3,  // time (milliseconds, seconds)
         ratio: 20,  // [1, 20]
     }).toDestination()
 })

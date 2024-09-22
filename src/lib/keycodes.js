@@ -26,3 +26,24 @@ export const FORBIDDEN = {
     'MetaRight': true,
     'MetaLeft': true,
 }
+
+export const INPUTS = {
+    'ArrowUp': 'Arrow',
+    'ArrowDown': 'Arrow',
+    'Backspace': 'Backspace',
+    'Delete': 'Backspace',
+    'Enter': 'Enter',
+    'Return': 'Enter',
+    'Escape': 'Escape',
+    'Digit0': 'Digit',
+    'Digit1': 'Digit',
+    'Digit2': 'Digit',
+    'Digit3': 'Digit',
+    'Digit4': 'Digit',
+    'Digit5': 'Digit',
+    'Digit6': 'Digit',
+    'Digit7': 'Digit',
+    'Digit8': 'Digit',
+    'Digit9': 'Digit',
+    'Period': 'Digit',
+}

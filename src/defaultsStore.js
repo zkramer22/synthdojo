@@ -8,5 +8,7 @@ export const defaultRipple = readable({
 })
 
 export const defaultEfxKnob = readable({ 
-    min: 0, max: 1, step: .01 
+    min: 0, 
+    max: 1, 
+    step: .01,
 })

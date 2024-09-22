@@ -90,6 +90,25 @@ input[type="range"] {
 	border-radius: 5px;
 }
 
+input[type=number] {
+	-webkit-appearance: textfield;
+	-moz-appearance: textfield;
+	appearance: textfield;
+	cursor: pointer;
+	position: relative;
+	text-align: center;
+	font-weight: lighter;
+	border: none;
+	outline: none;
+	margin: auto;
+	padding: 0;
+	color: white;
+	caret-color: transparent;
+}
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+}
+
 select {
 	display: block;
 	border: none;

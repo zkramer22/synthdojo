@@ -2,17 +2,17 @@
     import chevleft from '$lib/images/chevleft.svg'
     import chevright from '$lib/images/chevright.svg'
     import { ripple } from 'svelte-ripple-action'
-    import Knob from '@bismuthsoft/svelte-dj-knob'
+    import Knob from '$lib/components/Knob.svelte'
     import { onMount } from 'svelte'
-
-    import { KEYCODES, FORBIDDEN } from '$lib/keycodes.js'
+    import { formatTimeVal } from '$lib/formatters.js'
+    import { KEYCODES } from '$lib/keycodes.js'
     import { defaultRipple, defaultEfxKnob, } from '../../defaultsStore.js'
     import { 
         mouseDownNote, keyDownNotes,
         voices, baseOctave, synthType,
         volume, envelope, synths, effects, osc,
+        testKnob, testReverb,
     } from '../../oscStore.js'
-	import Page from './+page.svelte';
 
     export let keybed
     
@@ -25,17 +25,22 @@
     $: alerts = []
     const efxKnobs = {
         drive: [
-            { param: 'wet', display: '%', ...$defaultEfxKnob },
+            { param: 'wet', display: '%', efxType: 'normal', ...$defaultEfxKnob },
             { param: 'distortion', display: 'tone', ...$defaultEfxKnob },
-            { param: 'oversample', display: 'ovr', min: 0, max: 2, step: 1, values: ['none', '2x', '4x'] },
+            { param: 'oversample', display: 'ovr', values: ['none', '2x', '4x'] },
         ],
         reverb: [
-            { param: 'wet', display: '%', ...$defaultEfxKnob },
-            { param: 'decay', min: .01, max: 10, step: .01 },
-            { param: 'preDelay', display: 'pre', min: .01, max: .5, step: .01 },
+            { param: 'wet', display: '%', efxType: 'normal', ...$defaultEfxKnob },
+            { param: 'decay', efxType: 'time', min: .01, max: 10, step: .01 },
+            { param: 'preDelay', display: 'pre', efxType: 'time', min: .01, max: .5, step: .01 },
+        ],
+        delay: [
+            { param: 'wet', display: '%', efxType: 'normal', ...$defaultEfxKnob },
+            { param: 'delayTime', display: 'time', efxType: 'time', min: .01, max: 3, step: .01 },
+            { param: 'feedback', display: 'feedback', ...$defaultEfxKnob },
         ],
     }
-    $: settings = [
+    const settings = [
         { setting: 'voices', store: voices, storeVal: $voices, min: 1, max: 6 },
         { setting: 'octave', store: baseOctave, storeVal: $baseOctave, min: 1, max: 5 },
     ]
@@ -59,14 +64,7 @@
             return result
         })
     }
-    function formatTimeVal(seconds) {
-        let result;
-        if (seconds < 1) { result = (seconds * 1000).toFixed(0) + ' ms' } 
-        else { result = seconds.toFixed(2) + ' s' }
-        return result;
-    }
     function clearAlerts() {
-        console.log('clearing');
         alerts = alerts.slice(0, -1)
     }
     function getKeybed(base) {  // keybed starts on F.
@@ -107,7 +105,7 @@
         }
     }
     function keyEvent(e, on) {
-        // e.preventDefault()  // maybe do this and handle all keyboard inputs manually. maybe not
+        // e.preventDefault()  // do this later and handle all keyboard inputs manually
         const { code, repeat, metaKey } = e
         if (repeat) return
         if (metaKey && $synthType !== 'pluck') {
@@ -138,12 +136,6 @@
         const [control, opt] = keyCode  // "opt" is name of function
         if (control === 'octave') { baseOctave[opt]() }
     }
-    function handleEffectChange({ e, effectName, param }) {        
-
-    }
-    function handleSettingChange(e, store, storeVal) {
-
-    }
 ////// ------------------------------------------------------------- //
 ////// ----------------------- subscriptions ----------------------- //
 ////// ------------------------------------------------------------- //
@@ -156,6 +148,7 @@
             if (synthType === 'pluck') voices.mono()
         })
     })
+
 </script>
 
 <svelte:document on:keydown={ (e) => keyEvent(e, true) } on:keyup={ (e) => keyEvent(e, false) } />
@@ -182,7 +175,7 @@
                 <span>synth</span>
             </div>
             <div class="setting-val select">
-                <select bind:value={ $synthType } on:keydown={ (e) => e.preventDefault() }>
+                <select bind:value={ $synthType } on:keydown|preventDefault>
                     {#each Object.keys($synths) as synthOption}
                         <option value={synthOption}>
                             { synthOption }
@@ -198,32 +191,31 @@
             <div class="effect">
                 <div class="effect-name">{ effectName }</div>
                 <div class="effect-params flex centered">
-                    {#each efxKnobs[effectName] as { param, display, min, max, step, values } }
+                    {#each efxKnobs[effectName] as { param, display, min, max, step, values, efxType } }
                         <div class="effect-knob-wrapper">
                             <div class="effect-knob-name">
                                 { display || param }
                             </div>
                             {#if values}
-                                <div class="param-values-wrapper flex align-center">
+                                <!-- <div class="param-values-wrapper flex column align-center"> -->
+                                <select size={values.length} bind:value={$effects[effectName][param]} class="param-values-wrapper">
                                     {#each values as value, i}
-                                        <div class="param-value">{ value }</div>
+                                        <option class="param-value">{ value }</option>
                                     {/each}
-                                </div>
+                                </select>
+                                <!-- </div> -->
                             {:else}
-                                <!-- only 'wet' values in a Tone.Effect object satisfy the following condition  -->
-                                {#if typeof($effects[effectName][param].value) === 'number' }
+                                <!-- only 'wet' param in Tone.Effect satisfies the following condition  -->
+                                {#if efxType === 'normal' || typeof($effects[effectName][param].value) === 'number' }
                                     <div class="effect-knob">
-                                        <Knob bind:value={$effects[effectName][param].value} min={min} max={max} step={step}
-                                            size="3rem" strokeWidth="{5}" 
-                                            textColor="white" bgColor="#333333" valueColor="pink"
-                                        />
+                                        <Knob bind:value={$effects[effectName][param].value} min={min} max={max} step={step} efxType={efxType}
+                                            size={60} textColor="white" bgColor="#333333" color="#ffffaf" />
                                     </div>
                                 {:else}
+                                    <!-- all other Tone.Effect params  -->
                                     <div class="effect-knob">
-                                        <Knob bind:value={$effects[effectName][param]} min={min} max={max} step={step}
-                                            size="3rem" strokeWidth="{5}" 
-                                            textColor="white" bgColor="#333333" valueColor="pink"
-                                        />
+                                        <Knob bind:value={$effects[effectName][param]} min={min} max={max} step={step} efxType={efxType}
+                                            size={60} textColor="white" bgColor="#333333" color="#ffffaf" />
                                     </div>
                                 {/if}
                             
@@ -359,6 +351,7 @@
         text-align: center;
         position: relative;
         margin-bottom: 7px;
+        cursor: pointer;
         &:last-of-type {
             margin-bottom: 0;
         }
@@ -373,6 +366,7 @@
     }
     .setting-name {
         margin-bottom: 5px;
+        font-size: .9rem;
     }
     .setting-val {
         display: flex;
@@ -381,12 +375,12 @@
         border: 1px solid gray;
         height: 30px;
         padding: 0;
+        font-size: .9rem;
         select {
             height: 100%;
             padding: 0 5px;
             text-align: center;
             font-weight: lighter;
-            font-size: 1rem;
         }
         &:has(>input:focus) {
             border-color: white;
@@ -397,29 +391,17 @@
         margin: auto;
     }
     .param-values-wrapper {
+        text-align: center;
         .param-value {
             border: 1px solid gray;
-            padding: 4px 7px;
-            margin-right: 5px;
+            width: 80%;
+            font-size: .8rem;
         }
     }
 
     input[type=number] {
-        -webkit-appearance: textfield;
-        -moz-appearance: textfield;
-        appearance: textfield;
-        cursor: pointer;
-        position: relative;
         width: auto;
         height: 100%;
-        text-align: center;
-        border: none;
-        padding: 0;
-        color: white;
-        caret-color: transparent;
-        &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-        }
     }
 
     input[type=range] {
@@ -490,8 +472,19 @@
         text-align: center;
         margin-right: 10px;
     }
+    .effect-name {
+        border: 1px solid gray;
+        border-radius: 5px 5px 0 0;
+        border-bottom: 0px;
+        padding: 3px;
+    }
     .effect-knob-wrapper {
         margin-right: 10px;
+    }
+
+    .knob-circle {
+        width: 20px;
+        height: 20px;
     }
 
     @media (hover:hover) {
