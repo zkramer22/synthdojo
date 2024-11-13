@@ -18,6 +18,7 @@ html, body {
 	margin: 0;
 	font-weight: 200;
 	user-select: none;
+	box-sizing: border-box;
 }
 
 h1,
@@ -59,6 +60,16 @@ img {
 	height: auto;
 }
 
+canvas {
+	display: block;
+}
+
+.container {
+	width: 100%;
+	max-width: 69rem;
+	margin: 0 auto;
+}
+
 .text-column {
 	display: flex;
 	max-width: 48rem;
@@ -77,6 +88,15 @@ button {
 	box-shadow: none;
 	outline: none;
 	border: 1px solid;
+}
+
+.menu-toggle {
+	padding: 3px 10px;
+    border-radius: 5px;
+    background-color: #333333;
+    border: 1px solid transparent;
+	width: auto;
+	height: auto;
 }
 
 input[type="range"] {
@@ -158,4 +178,8 @@ select:focus {
 
 .align-center {
 	align-items: center;
+}
+
+.text-center {
+	text-align: center;
 }

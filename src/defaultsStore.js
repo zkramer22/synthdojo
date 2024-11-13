@@ -7,7 +7,7 @@ export const defaultRipple = readable({
     disabled: false,
 })
 
-export const defaultEfxKnob = readable({ 
+export const defaultFxKnob = readable({ 
     min: 0, 
     max: 1, 
     step: .01,

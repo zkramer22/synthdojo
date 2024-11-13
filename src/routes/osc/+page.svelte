@@ -1,5 +1,6 @@
 <script>
-	import Keybed from "./Keybed.svelte"
+	import Keybed from './Keybed.svelte'
+	import Visualizer from './Visualizer.svelte'
 </script>
 
 <svelte:head>
@@ -7,10 +8,11 @@
 	<meta name="description" content="About this app" />
 </svelte:head>
 
-<!-- <Visualizer /> -->
+<Visualizer />
 
 <Keybed />
 
+<!-- <Meter /> -->
 <!-- 
 	visualizer canvas animation
 	THREE.js

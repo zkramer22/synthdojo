@@ -3,13 +3,12 @@
     import { formatTimeVal } from '$lib/formatters.js'
     import { INPUTS } from '$lib/keycodes.js'
     
-    export let efxType = 'normal'
+    export let fxType = 'normal'
     export let min = 0
     export let max = 1
     export let step = (max - min) / 100
     export let value  // for display
-    // export let store  // for access store.update()
-    
+
     export let size
     export let bgColor
     export let color
@@ -27,6 +26,11 @@
             mult: 1,
             fix: 3,
             formatter: (value, mult, fix) => formatTimeVal(defaultFormatter(value, mult, fix)),
+        },
+        decibel: {
+            mult: 1,
+            fix: 1,
+            formatter: defaultFormatter
         }
     }
     let inputElem
@@ -48,7 +52,7 @@
 
     
     function formatDisplayValue(value) {
-        const { mult, formatter, fix } = displayMods[efxType]
+        const { mult, formatter, fix } = displayMods[fxType]
         const display = formatter(value, mult, fix)
         return display  // add dynamic formatting based on effect type
     }
@@ -56,7 +60,7 @@
     function checkTempValue() {
         if (!enteringValue) return
         if (tempValue === '') return enteringValue = false
-        const { mult, fix } = displayMods[efxType]
+        const { mult, fix } = displayMods[fxType]
         const converted = Number((tempValue / mult).toFixed(fix))
         valueStore.update(currentVal => converted < min ? min : converted > max ? max : converted)
         tempValue = ''
@@ -73,11 +77,11 @@
             case 'Arrow':
                 direction = code === 'ArrowUp' ? 1 : -1
                 isMac = navigator.platform.indexOf('Mac') === 0
-                const { mult, fix } = displayMods[efxType]
+                const { mult, fix } = displayMods[fxType]
                 modifier = (isMac ? metaKey : ctrlKey) ? 100 : shiftKey ? 10 : altKey ? .1 : 1
                 // modifier /= mult
-                if (efxType === 'normal') { modifier /= mult }
-                else if (efxType === 'time') { modifier = modifier / (mult * 100) }
+                if (fxType === 'normal') { modifier /= mult }
+                else if (fxType === 'time') { modifier = modifier / (mult * 100) }
                 valueStore.update(currentVal => {
                     const newVal = Number((currentVal + (direction * modifier)).toFixed(fix))
                     return newVal < min ? min : newVal > max ? max : newVal

@@ -5,30 +5,32 @@
 	import ztk from '$lib/images/ztk.svg'
 </script>
 
-<header>
-	<div class="corner">
-		<a class="github" href="https://github.com/zkramer22/synthdojo" target="_blank">
-			<img src={github} alt="github logo">
-		</a>
-	</div>
-
-	<nav>
-		<ul>
-			<li aria-current={$page.url.pathname === '/' ? 'page' : undefined}>
-				<a href="/">Home</a>
-			</li>
-			<li aria-current={$page.url.pathname === '/osc' ? 'page' : undefined}>
-				<a href="/osc">osc</a>
-			</li>
-		</ul>
-	</nav>
-
-	<div class="corner">
-		<a class="ztk" href="https://zachkramer.dev">
-			<img src={ztk} alt="ztk monogram">
-		</a>
-	</div>
-</header>
+<div class="container">
+	<header>
+		<div class="corner">
+			<a class="github" href="https://github.com/zkramer22/synthdojo" target="_blank">
+				<img src={github} alt="github logo">
+			</a>
+		</div>
+	
+		<nav>
+			<ul>
+				<li aria-current={$page.url.pathname === '/' ? 'page' : undefined}>
+					<a href="/">Home</a>
+				</li>
+				<li aria-current={$page.url.pathname === '/osc' ? 'page' : undefined}>
+					<a href="/osc">osc</a>
+				</li>
+			</ul>
+		</nav>
+	
+		<div class="corner">
+			<a class="ztk" href="https://zachkramer.dev">
+				<img src={ztk} alt="ztk monogram">
+			</a>
+		</div>
+	</header>
+</div>
 
 <style>
 	header {

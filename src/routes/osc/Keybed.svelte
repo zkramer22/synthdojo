@@ -1,50 +1,72 @@
 <script>
     import chevleft from '$lib/images/chevleft.svg'
     import chevright from '$lib/images/chevright.svg'
+    import bars from '$lib/images/bars.svg'
+    import wave from '$lib/images/wave.svg'
     import { ripple } from 'svelte-ripple-action'
     import Knob from '$lib/components/Knob.svelte'
     import { onMount } from 'svelte'
-    import { formatTimeVal } from '$lib/formatters.js'
     import { KEYCODES } from '$lib/keycodes.js'
-    import { defaultRipple, defaultEfxKnob, } from '../../defaultsStore.js'
+    import { scale } from '$lib/funcs.js'
+
+    import { defaultRipple, defaultFxKnob, } from '../../defaultsStore.js'
     import { 
         mouseDownNote, keyDownNotes,
-        voices, baseOctave, synthType,
-        volume, envelope, synths, effects, osc,
-        testKnob, testReverb,
+        voices, baseOctave, synthType, synthVolumes,
+        volume, userVolume, envelope, synths, effects, osc,
+        visualizer,
     } from '../../oscStore.js'
-
-    export let keybed
     
-	let notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#','A', 'A#', 'B']
-	let keycodes = Object.keys(KEYCODES)
-	let keyNum = 17  // sets max number of keys in keybed
-	$: keybed = getKeybed($baseOctave)
+	const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#','A', 'A#', 'B']
+	const keycodes = Object.keys(KEYCODES)
+	const keyNum = 17  // sets max number of keys in keybed
     const natOrSharp = (note) => note[1] === '#' ? 'sharp' : 'natural'
-    $: noteIsOn = (note) => note === $mouseDownNote || $keyDownNotes.includes(note) ? 'is-on' : ''
-    $: alerts = []
-    const efxKnobs = {
+    const fxKnobs = {
         drive: [
-            { param: 'wet', display: '%', efxType: 'normal', ...$defaultEfxKnob },
-            { param: 'distortion', display: 'tone', ...$defaultEfxKnob },
-            { param: 'oversample', display: 'ovr', values: ['none', '2x', '4x'] },
+            { display: '%', param: 'wet', fxType: 'normal', ...$defaultFxKnob },
+            { display: 'tone', param: 'distortion', ...$defaultFxKnob },
         ],
         reverb: [
-            { param: 'wet', display: '%', efxType: 'normal', ...$defaultEfxKnob },
-            { param: 'decay', efxType: 'time', min: .01, max: 10, step: .01 },
-            { param: 'preDelay', display: 'pre', efxType: 'time', min: .01, max: .5, step: .01 },
+            { display: '%', param: 'wet', fxType: 'normal', ...$defaultFxKnob },
+            { param: 'decay', fxType: 'time', min: .01, max: 10, step: .01 },
+            { display: 'pre', param: 'preDelay', fxType: 'time', min: .01, max: .5, step: .01 },
         ],
         delay: [
-            { param: 'wet', display: '%', efxType: 'normal', ...$defaultEfxKnob },
-            { param: 'delayTime', display: 'time', efxType: 'time', min: .01, max: 3, step: .01 },
-            { param: 'feedback', display: 'feedback', ...$defaultEfxKnob },
+            { display: '%', param: 'wet', fxType: 'normal', ...$defaultFxKnob },
+            { display: 'time', param: 'delayTime', fxType: 'time', min: .01, max: 3, step: .01 },
+            { display: 'feedback', param: 'feedback', ...$defaultFxKnob },
         ],
     }
-    const settings = [
+    const envKnobs = [
+        { display: 'A', param: 'attack', fxType: 'time', min: .005, max: 2, step: .001 },
+        { display: 'D', param: 'decay', fxType: 'time', min: .05, max: 2, step: .001 },
+        { display: 'S', param: 'sustain', fxType: 'normal', min: 0, max: 1, step: .01 },
+        { display: 'R', param: 'release', fxType: 'time', min: .01, max: 5, step: .001 },
+    ]
+    const vizKnobs = [
+        { display: 'type', param: 'analyserStr', values: [{ name: 'fft', img: bars }, { name: 'waveform', img: wave }] },
+        { display: 'line width', param: 'lineWidth', min: 1, max: 10, step: .1, fxType: 'decibel' }
+    ]
+
+    let meterWrapper = undefined
+    let meterEl = undefined
+
+    $: meterVal = null
+	$: keybed = getKeybed($baseOctave)
+    $: noteIsOn = (note) => note === $mouseDownNote || $keyDownNotes.includes(note) ? 'is-on' : ''
+    $: alerts = []
+    $: menus = {
+        fx: false,
+        env: false,
+    }
+    $: menuIsOpen = (menu) => menus[menu] ? 'open' : ''
+    $: settings = [
         { setting: 'voices', store: voices, storeVal: $voices, min: 1, max: 6 },
         { setting: 'octave', store: baseOctave, storeVal: $baseOctave, min: 1, max: 5 },
     ]
+    $: vizIsActive = (name) => name === $visualizer.analyserStr ? 'active' : ''
 
+ 
 ////// ------------------------------------------------------------- //
 ////// ----------------------- ui functions ------------------------ //
 ////// ------------------------------------------------------------- //
@@ -136,31 +158,88 @@
         const [control, opt] = keyCode  // "opt" is name of function
         if (control === 'octave') { baseOctave[opt]() }
     }
+    function setMeter() {
+
+    }
+    function setVolume(vol) {
+        if (vol === 0) volume.set(-Infinity)
+        else {
+            volume.set(Number((
+                scale(vol * $synthVolumes[$synthType], 1, 100, -60, -6)
+            ).toFixed()))
+        }
+    }
+    function menuButton(menu) {
+        if (menus[menu]) menus[menu] = false
+        else {
+            Object.keys(menus).forEach(key => menus[key] = false)
+            menus[menu] = true
+        }
+    }
+    function changeAnalyser(name) {
+        visualizer.set({
+            lineWidth: $visualizer.lineWidth,
+            analyserStr: name 
+        })
+    }
 ////// ------------------------------------------------------------- //
 ////// ----------------------- subscriptions ----------------------- //
 ////// ------------------------------------------------------------- //
     onMount(() => {
         baseOctave.subscribe(() => {
-            $osc.releaseAll()
-            updateKeyDownNotes({ kill: true })
+            if (keyDownNotes) {
+                if ($synthType !== 'pluck') $osc.releaseAll()
+                updateKeyDownNotes({ kill: true })
+            }
         })
-        synthType.subscribe((synthType) => {
+        synthType.subscribe(synthType => {
             if (synthType === 'pluck') voices.mono()
+            setVolume($userVolume)
         })
+        userVolume.subscribe(userVolume => {
+            setVolume(userVolume)
+        })
+        setMeter()
     })
 
 </script>
 
 <svelte:document on:keydown={ (e) => keyEvent(e, true) } on:keyup={ (e) => keyEvent(e, false) } />
-
-<div class="osc-wrapper">
+    
+<div class="osc-wrapper container">
+    <div class="volume-wrapper">
+        <div class="effect-knob-wrapper">
+            <div class="effect-name text-center">
+                volume
+            </div>
+            <div class="effect-knob">
+                <Knob bind:value={$userVolume} min={0} max={100} step={1} fxType="decibel"
+                    size={60} textColor="white" bgColor="#333333" color="#ffbde1" />
+            </div>
+        </div>
+    </div>
+    
     <div class="key-settings-wrapper">
+        <div class="key-setting">
+            <div class="setting-name">
+                <span>synth</span>
+            </div>
+            <div class="setting-val select">
+                <select class="hover-bright" bind:value={ $synthType } on:keydown|preventDefault>
+                    {#each Object.keys($synths) as synthOption}
+                        <option value={synthOption}>
+                            { synthOption }
+                        </option>
+                    {/each}
+                </select>
+            </div>
+        </div>
         {#each settings as { setting, min, max, store, storeVal } }
         <div class="key-setting">
             <div class="setting-name">
                 <span>{ setting }</span></div>
             <div class="setting-val">
-                <div class="button" use:ripple={ defaultRipple } on:click={ store.dec }>
+                <div class="button hover-bright" use:ripple={ defaultRipple } on:click={ store.dec }>
                     <img src={chevleft} alt="down" />
                 </div>
                 <input type="number" min={min} max={max} bind:value={storeVal} on:input={ store.set(storeVal) } />
@@ -170,75 +249,104 @@
             </div>
         </div>
         {/each}
-        <div class="key-setting">
-            <div class="setting-name">
-                <span>synth</span>
-            </div>
-            <div class="setting-val select">
-                <select bind:value={ $synthType } on:keydown|preventDefault>
-                    {#each Object.keys($synths) as synthOption}
-                        <option value={synthOption}>
-                            { synthOption }
-                        </option>
-                    {/each}
-                </select>
-            </div>
-        </div>
     </div>
 
-    <div class="effects-wrapper">
-        {#each Object.keys(efxKnobs) as effectName}
+    <div class="menus-wrapper">
+        <div class={`menu-toggle hover-bright ${menuIsOpen('fx')}`} on:click={ () => menuButton('fx')}>FX</div>
+        <div class={`menu-toggle hover-bright ${menuIsOpen('env')}`} on:click={ () => menuButton('env') }>envelope</div>
+        <div class={`menu-toggle hover-bright ${menuIsOpen('viz')}`} on:click={ () => menuButton('viz') }>visuals</div>
+    </div>
+    
+    <div class={`effects-wrapper menu ${menuIsOpen('fx')}`}>
+        {#each Object.keys(fxKnobs) as effectName}
             <div class="effect">
-                <div class="effect-name">{ effectName }</div>
+                <div class="effect-name border">{ effectName }</div>
                 <div class="effect-params flex centered">
-                    {#each efxKnobs[effectName] as { param, display, min, max, step, values, efxType } }
+                    {#each fxKnobs[effectName] as { param, display, min, max, step, values, fxType } }
                         <div class="effect-knob-wrapper">
                             <div class="effect-knob-name">
                                 { display || param }
                             </div>
                             {#if values}
-                                <!-- <div class="param-values-wrapper flex column align-center"> -->
                                 <select size={values.length} bind:value={$effects[effectName][param]} class="param-values-wrapper">
                                     {#each values as value, i}
                                         <option class="param-value">{ value }</option>
                                     {/each}
                                 </select>
-                                <!-- </div> -->
                             {:else}
                                 <!-- only 'wet' param in Tone.Effect satisfies the following condition  -->
-                                {#if efxType === 'normal' || typeof($effects[effectName][param].value) === 'number' }
+                                {#if fxType === 'normal' || typeof($effects[effectName][param].value) === 'number' }
                                     <div class="effect-knob">
-                                        <Knob bind:value={$effects[effectName][param].value} min={min} max={max} step={step} efxType={efxType}
+                                        <Knob bind:value={$effects[effectName][param].value} min={min} max={max} step={step} fxType={fxType}
                                             size={60} textColor="white" bgColor="#333333" color="#ffffaf" />
                                     </div>
                                 {:else}
                                     <!-- all other Tone.Effect params  -->
                                     <div class="effect-knob">
-                                        <Knob bind:value={$effects[effectName][param]} min={min} max={max} step={step} efxType={efxType}
+                                        <Knob bind:value={$effects[effectName][param]} min={min} max={max} step={step} fxType={fxType}
                                             size={60} textColor="white" bgColor="#333333" color="#ffffaf" />
                                     </div>
                                 {/if}
-                            
-
-                                <!-- only 'wet' values in a Tone.Effect object satisfy the following condition  -->
-                                <!-- {#if typeof($effects[effectName][param].value) === 'number' } 
-                                    <input type="range" min={min} max={max} step={step} bind:value={$effects[effectName][param].value} />
-                                {:else}
-                                    <input type="range" min={min} max={max} step={step} bind:value={$effects[effectName][param]} />
-                                {/if} -->
-
                             {/if}
-                            </div>
+                        </div>
                     {/each}
                 </div>
             </div>
         {/each}
     </div>
 
+    <div class={`envelope-wrapper menu ${menuIsOpen('env')}`}>
+        <div class="effect">
+            <div class="effect-name border">envelope</div>
+            <div class="effect-params flex centered">
+                {#each envKnobs as { display, param, fxType, min, max, step }}
+                <div class="effect-knob-wrapper">
+                    <div class="effect-knob-name text-center">
+                        { display }
+                    </div>
+                    <div class="effect-knob">
+                        <Knob bind:value={$envelope[param]} min={min} max={max} step={step} fxType={fxType}
+                            size={60} textColor="white" bgColor="#333333" color="#90ee90" />
+                    </div>
+                </div>
+                {/each}
+            </div>
+        </div>
+    </div>
+
+    <div class={`visualizer-settings menu ${menuIsOpen('viz')}`}>
+        <div class="effect">
+            <div class="effect-name border">visuals</div>
+            <div class="effect-params flex centered">
+                {#each vizKnobs as { display, param, fxType, min, max, step, values }}
+                <div class="effect-knob-wrapper">
+                    <div class="effect-knob-name text-center">
+                        { display }
+                    </div>
+                    {#if values}
+                    <div class="flex centered" style:height={'60px'}>
+                        {#each values as { name, img }}
+                        <div class={`img-button ${vizIsActive(name)}`} on:click={ () => changeAnalyser(name) }>
+                            <img src={img} alt="down" />
+                        </div>
+                        {/each}
+                    </div>
+                    {:else}
+                    <div class="effect-knob">
+                        <Knob bind:value={$visualizer[param]} min={min} max={max} step={step} fxType={fxType}
+                            size={60} textColor="white" bgColor="#333333" color="#ffffff" />
+                    </div>
+                    {/if}
+                </div>
+                {/each}
+            </div>
+        </div>
+    </div>
+
     <div class="keybed-wrapper" on:mouseleave={ () => mouseEvent('') }>
         {#each keybed as { note, keycode, octave }, i}
             <!-- use:ripple={ defaultRipple } -->
-            <div class={`note ${natOrSharp(note)} ${noteIsOn(`${note}${octave}`)}`}
+            <div class={`note hover-bright ${natOrSharp(note)} ${noteIsOn(`${note}${octave}`)}`}
                 on:mousedown={ () => mouseEvent(`${note}${octave}`) }
                 on:mouseup={ () => mouseEvent('') }
                 on:mouseenter={ () => slideEvent(`${note}${octave}`) }
@@ -252,7 +360,8 @@
         {/each}
     </div>
 
-    <div class="envelope-wrapper">
+    <!-- ENVELOPE w/ SLIDERS -->
+    <!-- <div class={`envelope-wrapper menu ${menuIsOpen('env')}`}>
         <div class="input-range-wrapper">
             A
             <input type="range" min=".005" max="2" step=".001" bind:value={$envelope.attack} />
@@ -281,21 +390,25 @@
                 {formatTimeVal($envelope.release)}
             </div>
         </div>
-    </div>
+    </div> -->
 </div>
 
 <style lang="scss">
     .osc-wrapper {
         display: grid;
-        grid-template-columns: 3fr auto 5fr;
+        grid-template-columns: 1fr 100px auto 1fr;
+        grid-template-rows: auto 220px;
         grid-template-rows: auto 1fr;
-        grid-gap: 10px;
+        grid-gap: 5px;
         width: 100%;
-        margin: auto auto 15px;
-        position: relative;
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        right: 0;
     }
     .keybed-wrapper {
-        grid-column: 2 / 3;
+        // grid-column: 2 / 3;
+        grid-column: 3 / 4;
         grid-row: 2 / 3;
         display: flex;
         margin: auto auto;
@@ -304,7 +417,7 @@
         border-radius: 5px;
         -webkit-user-drag: none;
         user-select: none;
-        box-shadow: 0px 5px 2px 4px #141414;
+        box-shadow: 0px 5px 1px 0px #141414;
     }
     .note {
         border: 1px solid #4a4a4a;
@@ -341,7 +454,8 @@
         opacity: 0;
     }
     .key-settings-wrapper {
-        grid-column: 1 / 2;
+        // grid-column: 1 / 2;
+        grid-column: 2 / 3;
         grid-row: 2 / 3;
         margin: auto;
         padding: 0 10px;
@@ -351,14 +465,20 @@
         text-align: center;
         position: relative;
         margin-bottom: 7px;
-        cursor: pointer;
         &:last-of-type {
             margin-bottom: 0;
         }
+        &.visual {
+            height: 60px;
+            display: flex;
+            align-items: center;
+        }
         .button {
-            width: 25%;
+            cursor: pointer;
+            width: 50%;
             height: 100%;
             align-content: center;
+            padding: 0 5px;
             img {
                 height: 60%;
             }
@@ -381,6 +501,7 @@
             padding: 0 5px;
             text-align: center;
             font-weight: lighter;
+            cursor: pointer;
         }
         &:has(>input:focus) {
             border-color: white;
@@ -392,18 +513,17 @@
     }
     .param-values-wrapper {
         text-align: center;
+        margin: 3px;
         .param-value {
             border: 1px solid gray;
-            width: 80%;
             font-size: .8rem;
         }
     }
-
     input[type=number] {
-        width: auto;
+        // width: auto;
+        width: 100%;
         height: 100%;
     }
-
     input[type=range] {
         border: 1px solid gray;
         &::-webkit-slider-runnable-track {
@@ -415,18 +535,22 @@
             border-radius: 5px;
         }
     }
-    
     .envelope-wrapper {
         grid-column: 3 / 4;
-        grid-row: 2 / 3;
+        grid-row: 1 / 2;
         display: flex;
-        margin: auto;
+        align-items: end;
+        bottom: -150px;
+        &.open {
+            bottom: 0px;
+        }
         .input-range-wrapper {
             flex-direction: column;
             align-items: center;
             text-align: center;
             margin: 0 5px;
             input[type=range] {
+                // width: 80%;
                 writing-mode: vertical-lr;
                 direction: rtl;
                 vertical-align: middle;
@@ -434,7 +558,7 @@
                 &::-webkit-slider-thumb {
                     height: 1px;
                     width: 100%;
-                    background-color: lightgreen;
+                    background-color: #90ee90;
                     box-shadow: 0px 400px 0px 400px lightgreen;
                 }
             }
@@ -451,12 +575,17 @@
         padding: 2px;
     }
     .effects-wrapper {
-        grid-column: 2 / 2;
+        grid-column: 3 / 4;
         grid-row: 1 / 2;
         display: flex;
         width: 100%;
         height: 100%;
+        bottom: -150px;
         border-radius: 5px;
+        padding: 0 10px;
+        &.open {
+            bottom: 0px;
+        }
         .input-range-wrapper {
             input[type=range] {
                 &::-webkit-slider-thumb {
@@ -470,27 +599,93 @@
     }
     .effect {
         text-align: center;
-        margin-right: 10px;
+        // margin-right: 10px;
+        margin: 3px;
     }
     .effect-name {
-        border: 1px solid gray;
-        border-radius: 5px 5px 0 0;
-        border-bottom: 0px;
         padding: 3px;
+        &.border {
+            border: 1px solid gray;
+            border-radius: 5px 5px 0 0;
+            border-bottom: 0px;
+        }
     }
     .effect-knob-wrapper {
-        margin-right: 10px;
+        margin: 3px;
     }
-
+    .effect-knob-name {
+        font-size: .75rem;
+    }
     .knob-circle {
         width: 20px;
         height: 20px;
     }
+    .menus-wrapper {
+        grid-column: 3 / 4;
+        // grid-row: 1 / 2;
+        grid-row: 3 / 4;
+        display: flex;
+        align-items: end;
+        // justify-content: end;
+    }
+    .menu-toggle {
+        cursor: pointer;
+        z-index: 10;
+        padding: 3px 10px;
+        margin-right: 7px;
+        border-radius: 5px;
+        text-align: center;
+        width: fit-content;
+        background-color: #333333;
+        border: 1px solid transparent;
+        &.open {
+            border: 1px solid #ffffaf;
+        }
+    }
+    .menu {
+        transition: left .2s ease, bottom .2s ease, top .2s ease, right .2s ease;
+        position: relative;
+    }
+    .volume-wrapper {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+        display: flex;
+        justify-content: center;
+        align-items: end;
+    }
+    .visualizer-settings {
+        grid-column: 3 / 4;
+        grid-row: 1 / 2;
+        display: flex;
+        align-items: end;
+        bottom: -150px;
+        &.open {
+            bottom: 0px;
+        }
+        .effect-knob-wrapper {
+            flex-grow: 1;
+        }
+        .img-button {
+            box-sizing: border-box;
+            width: 45px;
+            height: 45px;
+            height: auto;
+            padding: 5px;
+            background-color: #333333;
+            border: 1px solid transparent;
+            // transition: background-color .1s linear, border-color .1s linear;
+            border-radius: 3px;
+            margin: 3px;
+            &.active {
+                background-color: #444444;
+                // border-color: #ffffaf;
+                border-color: gray;
+            }
+        }
+    }
 
     @media (hover:hover) {
-        .note:hover,
-        .key-setting .button:hover,
-        select:hover {
+        .hover-bright:hover {
             filter: brightness(1.3);
         }
 	} 
