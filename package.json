@@ -9,7 +9,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"predeploy": "npm run build",
-		"deploy": "gh-pages -d build"
+		"deploy": "gh-pages -d build -t true"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
@@ -35,5 +35,6 @@
 		"svelte-ripple-action": "^1.0.6",
 		"tone": "^15.0.4",
 		"typescript": "^5.6.2"
-	}
+	},
+    "homepage": "http://zkramer22.github.io/synthdojo"
 }
