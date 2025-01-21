@@ -3,6 +3,7 @@
 	import '../app.css'
 	import github from '$lib/images/github.svg'
 	import ztk from '$lib/images/ztk.svg'
+    import { base } from '$app/paths'
 </script>
 
 <div class="container">
@@ -15,11 +16,11 @@
 	
 		<nav>
 			<ul>
-				<li aria-current={$page.url.pathname === '/' ? 'page' : undefined}>
-					<a href="/">Home</a>
+				<li aria-current={$page.url.pathname === `${base}/` ? 'page' : undefined}>
+					<a href="{base}/">Home</a>
 				</li>
-				<li aria-current={$page.url.pathname === '/osc' ? 'page' : undefined}>
-					<a href="/osc">osc</a>
+				<li aria-current={$page.url.pathname === `${base}/osc` ? 'page' : undefined}>
+					<a href="{base}/osc">osc</a>
 				</li>
 			</ul>
 		</nav>
