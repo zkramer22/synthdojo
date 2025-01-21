@@ -34,9 +34,12 @@
 
 <style>
 	header {
+        position: relative;
+        z-index: 10000;
 		display: flex;
 		justify-content: space-between;
 		padding: 10px;
+        cursor: crosshair;
 	}
 
 	.corner a {
