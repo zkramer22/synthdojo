@@ -6,7 +6,9 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
 	preprocess: [vitePreprocess()],
 	kit: { 
-        adapter: adapter(),
+        adapter: adapter({
+            fallback: 'index.html' // This ensures dynamic routes are handled as a SPA
+        }),
         paths: {
             base: process.env.NODE_ENV === 'production' ? '/synthdojo' : '',
         }
