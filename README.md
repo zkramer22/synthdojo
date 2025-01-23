@@ -6,8 +6,8 @@ This is my web-based audio-visual playground, SynthDojo. Updates will be posted 
 
 ## Specs
 
-Built using:
+Tools used:
 
-• SvelteKit
-• Tone.js
-• Canvas
+• [SvelteKit](https://svelte.dev/)\
+• [Tone.js](https://tonejs.github.io/) – Web Audio API wrapper\
+• [Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
