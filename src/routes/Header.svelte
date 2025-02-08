@@ -26,7 +26,7 @@
 		</nav>
 	
 		<div class="corner">
-			<a class="ztk" href="https://zachkramer.dev">
+			<a class="ztk" href="https://ztkweb.com" target="_blank">
 				<img src={ztk} alt="ztk monogram">
 			</a>
 		</div>
@@ -40,7 +40,7 @@
 		display: flex;
 		justify-content: space-between;
 		padding: 10px;
-        cursor: crosshair;
+        /* cursor: crosshair; */
 	}
 
 	.corner a {
